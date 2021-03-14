@@ -1,0 +1,1 @@
+# amazon-redshift-lakehouse-workshop
