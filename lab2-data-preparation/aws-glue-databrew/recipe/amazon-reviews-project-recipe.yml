@@ -1,0 +1,33 @@
+- Action:
+    Operation: REPLACE_WITH_CUSTOM
+    Parameters:
+      columnDataType: int
+      sourceColumn: star_rating
+      value: '0'
+- Action:
+    Operation: REPLACE_PATTERN
+    Parameters:
+      pattern: ' '
+      sourceColumn: product_category
+      value: _
+- Action:
+    Operation: REPLACE_PATTERN
+    Parameters:
+      pattern: \&
+      sourceColumn: product_category
+      value: and
+- Action:
+    Operation: FILL_WITH_CUSTOM
+    Parameters:
+      columnDataType: string
+      sourceColumn: product_category
+      value: Unknown
+- Action:
+    Operation: REMOVE_VALUES
+    Parameters:
+      sourceColumn: product_category
+  ConditionExpressions:
+    - Condition: IS_NOT
+      Value: >-
+        ["Video_DVD","Music","Mobile_Apps","Digital_Video_Download","Books","Digital_Music_Purchase","Toys","Digital_Ebook_Purchase","PC","Video_Games","Electronics","Wireless","Home_Improvement","Watches","Shoes","Sports","Luggage","Health_and_Personal_Care","Home","Musical_Instruments","Mobile_Electronics","Digital_Software","Personal_Care_Appliances","Grocery","Software","Tools","Baby","Outdoors","Automotive","Unkonwn","Jewelry","Pet_Products","Apparel","Furniture","Gift_Card","Video","Office_Products","Major_Appliances","Kitchen","Lawn_and_Garden","Camera","Home_Entertainment","Beauty","Digital_Video_Games"]
+      TargetColumn: product_category

@@ -1,0 +1,437 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  DatabaseName:
+    Description: The name of the first database to be created when the cluster is created
+    Type: String
+    Default: dev
+    AllowedPattern: "([a-z]|[0-9])+"
+  ClusterType:
+    Description: The type of cluster
+    Type: String
+    Default: multi-node
+    AllowedValues:
+      - single-node
+      - multi-node
+  NumberOfNodes:
+    Description: The number of compute nodes in the cluster. For multi-node clusters,
+      the NumberOfNodes parameter must be greater than 1
+    Type: Number
+    Default: '2'
+  NodeType:
+    Description: The type of node to be provisioned
+    Type: String
+    Default: ra3.4xlarge
+    AllowedValues:
+      - ra3.4xlarge
+      - ra3.16xlarge
+  MasterUsername:
+    Description: The user name that is associated with the master user account for the cluster that is being created
+    Type: String
+    Default: awsuser
+    AllowedPattern: "([a-z])([a-z]|[0-9])*"
+  MasterUserPassword:
+    Description: The password that is associated with the master user account for the cluster that is being created. Default is Awsuser123. Must have a length of 8-64 characters, contain one uppercase letter, one lowercase letter, and one number. Also only contain printable ASCII characters except for '/', '@', '"', ' ', '\' and '\'.
+    Type: String
+    Default: Awsuser123
+  InboundTraffic:
+    Description: The IP address CIDR range (x.x.x.x/x) to connect from your local machine.  FYI, get your address using http://www.whatismyip.com.
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Must be a valid CIDR range of the form x.x.x.x/x.
+  PortNumber:
+    Description: The port number on which the cluster accepts incoming connections.
+    Type: Number
+    Default: '5439'
+Conditions:
+  IsMultiNodeCluster:
+    Fn::Equals:
+      - Ref: ClusterType
+      - multi-node
+Resources:
+  RedshiftRole:
+    Type: AWS::IAM::Role
+    Properties :
+      RoleName: !Sub "RedshiftImmersionRole-${SimpleStackUid}"
+      AssumeRolePolicyDocument:
+        Version : 2012-10-17
+        Statement :
+          -
+            Effect : Allow
+            Principal :
+              Service :
+                - redshift.amazonaws.com
+            Action :
+              - sts:AssumeRole
+      Path : /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AWSGlueConsoleFullAccess
+  RedshiftClusterParameterGroup:
+    Properties:
+      Description:
+        Fn::Sub: "Cluster parameter group"
+      ParameterGroupFamily: "redshift-1.0"
+      Parameters:
+        - ParameterName: "wlm_json_configuration"
+          ParameterValue: "[{\"query_group\":[\"defaulton\",\"lab4on\"],\"query_group_wild_card\":0,\"user_group\":[],\"user_group_wild_card\":0,\"concurrency_scaling\":\"off\",\"priority\":\"normal\",\"queue_type\":\"auto\",\"auto_wlm\":true},{\"query_group\":[\"lab1\",\"lab2\",\"lab3normal\",\"lab4off\",\"lab5\",\"lab6reads\",\"defaultoff\"],\"query_group_wild_card\":0,\"user_group\":[],\"user_group_wild_card\":0,\"concurrency_scaling\":\"off\",\"priority\":\"normal\",\"queue_type\":\"auto\",\"auto_wlm\":true},{\"query_group\":[\"lab3highest\"],\"query_group_wild_card\":0,\"user_group\":[],\"user_group_wild_card\":0,\"concurrency_scaling\":\"off\",\"priority\":\"highest\",\"queue_type\":\"auto\",\"auto_wlm\":true},{\"query_group\":[\"lab3lowest\"],\"query_group_wild_card\":0,\"user_group\":[],\"user_group_wild_card\":0,\"concurrency_scaling\":\"off\",\"priority\":\"lowest\",\"queue_type\":\"auto\",\"auto_wlm\":true},{\"query_group\":[\"lab6writes\"],\"query_group_wild_card\":0,\"user_group\":[],\"user_group_wild_card\":0,\"concurrency_scaling\":\"off\",\"priority\":\"highest\",\"queue_type\":\"auto\",\"auto_wlm\":true},{\"query_group\":[],\"query_group_wild_card\":0,\"user_group\":[],\"user_group_wild_card\":0,\"priority\":\"normal\",\"queue_type\":\"auto\",\"auto_wlm\":true},{\"short_query_queue\":false}]"
+    Type: AWS::Redshift::ClusterParameterGroup
+  RedshiftCluster:
+    Type: AWS::Redshift::Cluster
+    DependsOn:
+      - AttachGateway
+      - RedshiftRole
+    Properties:
+      ClusterType:
+        Ref: ClusterType
+      NumberOfNodes:
+        Fn::If:
+          - IsMultiNodeCluster
+          - Ref: NumberOfNodes
+          - Ref: AWS::NoValue
+      NodeType:
+        Ref: NodeType
+      DBName:
+        Ref: DatabaseName
+      MasterUsername:
+        Ref: MasterUsername
+      MasterUserPassword:
+        Ref: MasterUserPassword
+      ClusterParameterGroupName: !Ref RedshiftClusterParameterGroup
+      VpcSecurityGroupIds:
+        - Ref: SecurityGroup
+      ClusterSubnetGroupName:
+        Ref: RedshiftClusterSubnetGroup
+      PubliclyAccessible: 'true'
+      Port:
+        Ref: PortNumber
+      IamRoles:
+        - Fn::GetAtt: [RedshiftRole, Arn]
+  RedshiftClusterSubnetGroup:
+    Type: AWS::Redshift::ClusterSubnetGroup
+    Properties:
+      Description: Cluster subnet group
+      SubnetIds:
+        - Ref: Subnet
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 192.168.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 192.168.0.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      VpcId:
+        Ref: VPC
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group
+      SecurityGroupIngress:
+        - CidrIp:
+            Ref: InboundTraffic
+          FromPort: !Ref PortNumber
+          ToPort: !Ref PortNumber
+          IpProtocol: tcp
+        - CidrIp: '52.23.63.224/27'
+          Description: CIDR Block for Quicksight in us-east-1
+          IpProtocol: tcp
+          FromPort: 5439
+          ToPort: 5439
+        - CidrIp: '192.168.0.0/24'
+          Description: CIDR Block for Subnet
+          IpProtocol: tcp
+          FromPort: 5439
+          ToPort: 5439
+        - CidrIp: '52.70.63.192/27'
+          Description: CIDR Block for Firehose in us-east-1
+          IpProtocol: tcp
+          FromPort: 5439
+          ToPort: 5439
+      VpcId:
+        Ref: VPC
+  SecurityGroupSelfReference:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Self Referencing Rule
+      FromPort: -1
+      IpProtocol: -1
+      GroupId: !GetAtt [SecurityGroup, GroupId]
+      SourceSecurityGroupId: !GetAtt [SecurityGroup, GroupId]
+      ToPort: -1
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: VPC
+      InternetGatewayId:
+        Ref: InternetGateway
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+  Route:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId:
+        Ref: RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: Subnet
+      RouteTableId:
+        Ref: RouteTable
+  SimpleStackUidFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import hashlib
+          import cfnresponse
+
+          def get_md5(account: str, region: str, stack: str, length: int = 8) -> str:
+            md5 = hashlib.new('md5')
+            md5.update(account.encode('utf-8'))
+            md5.update(region.encode('utf-8'))
+            md5.update(stack.encode('utf-8'))
+            return md5.hexdigest()[:length]
+
+          def lambda_handler(event: dict, context) -> None:
+            responseData = {}
+            if event['RequestType'] == 'Create':
+              account = event['ResourceProperties']['AccountId']
+              region = event['ResourceProperties']['Region']
+              stack = event['StackId']
+              md5 = get_md5(account=account, region=region, stack=stack)
+              responseData['upper'] = md5.upper()
+              responseData['lower'] = md5.lower()
+            else: # delete / update
+              rs = event['PhysicalResourceId']
+              responseData['upper'] = rs.upper()
+              responseData['lower'] = rs.lower()
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, responseData['lower'], noEcho=True)
+      Handler: "index.lambda_handler"
+      Timeout: 30
+      Role:
+        Fn::GetAtt:
+          - SimpleStackUidFunctionRole
+          - Arn
+      Runtime: python3.7
+  SimpleStackUid:
+    Type: Custom::RandomString
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - SimpleStackUidFunction
+          - Arn
+      Region: AWS::Region
+      AccountId: AWS::AccountId
+  SimpleStackUidFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: "lambda-logs"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - "arn:aws:logs:*:*:*"
+  TaskDataBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName:
+        Fn::Sub: "lake-house-data-lake-workshop-${SimpleStackUid}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  GlueInternalDatabase:
+    Type: AWS::Glue::Database
+    DependsOn:
+      - TaskDataBucket
+    Properties:
+      CatalogId:
+        Ref: AWS::AccountId
+      DatabaseInput:
+        Name:
+          Fn::Sub: "internal-${SimpleStackUid}"
+        Description:
+          Fn::Sub: "Database for the internal prepared data at created bucket"
+  GlueExternalDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId:
+        Ref: AWS::AccountId
+      DatabaseInput:
+        Name:
+          Fn::Sub: "external-${SimpleStackUid}"
+        Description:
+          Fn::Sub: "Database for the external pre-prepared data at amazon-reviews-pds bucket"
+  GlueCrawlerExternalPrepReviews:
+    Type: AWS::Glue::Crawler
+    DependsOn: GlueRole
+    Properties:
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/GlueRole-${SimpleStackUid}
+      DatabaseName: !Ref GlueExternalDatabase
+      Targets:
+        S3Targets:
+          - Path: "s3://amazon-reviews-pds/parquet/"
+  GlueCrawlerExternalRawReviews:
+    Type: AWS::Glue::Crawler
+    DependsOn: GlueRole
+    Properties:
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/GlueRole-${SimpleStackUid}
+      DatabaseName: !Ref GlueExternalDatabase
+      Targets:
+        S3Targets:
+          - Path: "s3://amazon-reviews-pds/tsv/"
+  GlueCrawlerInternalPrepReviews:
+    Type: AWS::Glue::Crawler
+    DependsOn: GlueRole
+    Properties:
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/GlueRole-${SimpleStackUid}
+      DatabaseName: !Ref GlueExternalDatabase
+      Targets:
+        S3Targets:
+          - Path: !Sub "s3://${TaskDataBucket}/parquet/"
+  GlueCrawlerInternalRawReviews:
+    Type: AWS::Glue::Crawler
+    DependsOn: GlueRole
+    Properties:
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/GlueRole-${SimpleStackUid}
+      DatabaseName: !Ref GlueExternalDatabase
+      Targets:
+        S3Targets:
+          - Path: !Sub "s3://${TaskDataBucket}/raw/"
+  GlueRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "GlueRole-${SimpleStackUid}"
+      Description: "Allow services, like glue, to perform actions"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - glue.amazonaws.com
+            Action:
+              - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - databrew.amazonaws.com
+                - firehose.amazonaws.com
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: LambdaLoadRedshiftPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub "arn:aws:s3:::cloudformation-custom-resource-response-${AWS::Region}"
+                  - !Sub "arn:aws:s3:::cloudformation-waitcondition-${AWS::Region}"
+                  - !Sub "arn:aws:s3:::cloudformation-custom-resource-response-${AWS::Region}/*"
+                  - !Sub "arn:aws:s3:::cloudformation-waitcondition-${AWS::Region}/*"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceNotebookRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+        - arn:aws:iam::aws:policy/AmazonRDSDataFullAccess
+  CloudShellEnv:
+    Type: AWS::Cloud9::EnvironmentEC2
+    Properties:
+      AutomaticStopTimeMinutes: 30
+      Description: Lakehouse client workspace
+      InstanceType: t3.small
+      Name:
+        Fn::Join:
+          - ''
+          - - Ref: AWS::StackName
+            - Client
+      Repositories:
+        - PathComponent: /amazon-redshift-lakehouse-workshop
+          RepositoryUrl: https://github.com/johnmousa/amazon-redshift-lakehouse-workshop.git
+      SubnetId: !Ref Subnet
+      OwnerArn: !Ref "AWS::NoValue"
+Outputs:
+  ClusterEndpoint:
+    Description: Cluster endpoint
+    Value: !Sub "${RedshiftCluster.Endpoint.Address}:${RedshiftCluster.Endpoint.Port}"
+  PSQLConnection:
+    Description: Cluster endpoint
+    Value: !Sub "psql -h ${RedshiftCluster.Endpoint.Address} -p ${RedshiftCluster.Endpoint.Port} -d dev -U ${MasterUsername}"
+  GlueExternalDatabaseName:
+    Description: Catalog used for external tables
+    Value:
+      Ref: GlueExternalDatabase
+  TaskDataBucketName:
+    Description: "The name of the TaskDataBucket"
+    Value:
+      Ref: TaskDataBucket
+  ClusterName:
+    Description: Name of cluster
+    Value:
+      Ref: RedshiftCluster
+  RedshiftClusterRoleArn:
+    Description: "Returns the Amazon Resource Name (ARN) for the role associated with the Redshift cluster"
+    Value:
+      Fn::GetAtt:
+        - RedshiftRole
+        - Arn
+  RedshiftClusterUser:
+    Description: "The user name for Redshift cluster."
+    Value:
+      Ref: MasterUsername
+  RedshiftClusterPassword:
+    Description: "The master user password"
+    Value:
+      Ref: MasterUserPassword
+  RedshiftClusterSubnetGroupName:
+    Description: Name of cluster subnet group
+    Value:
+      Ref: RedshiftClusterSubnetGroup
+  RedshiftClusterSecurityGroupName:
+    Description: Name of cluster security group
+    Value:
+      Ref: SecurityGroup
+  Lab3LoadDataIntoCluster:
+    Description: Load TPSDS data
+    Value: !Sub "psql -h ${RedshiftCluster.Endpoint.Address} -p ${RedshiftCluster.Endpoint.Port} -d dev -U ${MasterUsername} -v s3datareadrole=${RedshiftRole.Arn} -f tpsds.sql"
