@@ -35,7 +35,7 @@ Creating a DataBrew project
    
 1. Scroll down and for “Select a dataset”, choose New dataset. 
 
-1. For “Dataset name"¸ enter `amazon-reviews`.
+1. For “Dataset name", enter `amazon-reviews`.
    
    ![Dataset creation](./assets/databrew-dataset.png)
    
