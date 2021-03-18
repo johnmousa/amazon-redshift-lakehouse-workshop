@@ -25,17 +25,17 @@ Creating a DataBrew project
    
 1. Choose **Create project**. 
    
-1. For “Name”, enter <amazon-reviews-project>.
+1. For “Name”, enter `amazon-reviews-project`.
 
 1. For “Attached recipe”, choose Create new recipe. 
    
-1. For “Recipe name”, the value <amazon-reviews-project-recipe> should be populated.
+1. For “Recipe name”, the value `amazon-reviews-project-recipe` should be populated.
    
    ![Project creation](./assets/databrew-project.png)
    
 1. Scroll down and for “Select a dataset”, choose New dataset. 
 
-1. For “Dataset name"¸ enter <amazon-reviews>.
+1. For “Dataset name", enter `amazon-reviews`.
    
    ![Dataset creation](./assets/databrew-dataset.png)
    
