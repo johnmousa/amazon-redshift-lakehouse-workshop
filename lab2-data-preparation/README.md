@@ -11,12 +11,6 @@ Once we've done that, we'll then load this data into our Amazon Redshift cluster
 
 ### Now let's configure our terminal
 
-#### If you have access to cloud shell
-Go the console search bar and type CloudShell.
-![CloudShell](./assets/cloudshell.png)
-
-1. Once open close the welcome screen
-
 #### Access terminal through Cloud9
 AWS Cloud9 is a cloud-based integrated development environment (IDE) that lets you write, run, 
 and debug your code with just a browser. It includes a code editor, debugger, and terminal.
@@ -70,12 +64,7 @@ Note: If you wish to continue loading the pre-prepared parquet data set you can 
 [loading data in your cluster](#finally,-Load-data-in-your-cluster).
 
 
-* Lab 2a - using **AWS Glue DataBrew** for a visual experience.
-  
-  AWS Glue DataBrew is a new visual data preparation tool that makes it easy for data analysts and data scientists to clean and normalize data to prepare it for analytics and machine learning.
-
-  You can follow lab [instructions here](./aws-glue-databrew/README.md)
-* Or, Lab 2b - using **AWS Glue Studio** for a more hand's experience.
+* Lab 2b - using **AWS Glue Studio**.
   
   AWS Glue Studio is a new graphical interface that makes it easy to create, run, and monitor extract, transform, and load (ETL) jobs in AWS Glue. You can visually compose data transformation workflows and seamlessly run them on AWS Glue’s Apache Spark-based serverless ETL engine.
 
@@ -277,7 +266,7 @@ CREATE TABLE public.product_dim
 DISTSTYLE ALL SORTKEY (product_id);
 ```
 
-DATE_DIM table is pre-loaded, run below query to verify it has data (row count = **73049**)
+DATE_DIM table is now loaded, run below query to verify it has data (row count = **73049**)
 
 ```sql
 SELECT COUNT(*)
@@ -454,7 +443,7 @@ SELECT COUNT(*)
 FROM public.daily_product_reviews_fact;
 ```
 
-### Streaming pipeline
+### Streaming pipeline (Optional)
 
 #### Before you begin
 

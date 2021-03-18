@@ -23,16 +23,6 @@ Please use Chrome or Firefox browser to ensure smooth lab experience.
    
    ![Region Selection](https://redshift-deepdive.workshop.aws/images/gettingstarted/awsregion-console.png)
 
-### Setup workshop environment by yourself
-
-* Determine and capture the following information and login to the AWS Console. If you are new to AWS, you can create an account.
-    * [Your-AWS_Account_Id]
-    * [Your_AWS_User_Name]
-    * [Your_AWS_Password]
-      
-When choosing a Region for your cluster, consider US-EAST-1 (N. Virginia). 
-While most of these labs can be done in any Region, some labs query data in S3 which is located in US-EAST-1.
-
 ### Launch prerequisites template
 
 To launch this Cloudformation template and configure security automatically using cloud formation, use the following link.

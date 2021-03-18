@@ -14,9 +14,5 @@ and seamlessly embedded into your applications, portals, and websites.
 
 Please find instructions for this lab [here](https://redshift-deepdive.workshop.aws/lab2b/biintegration.html)
 
-### 4.b Additionally, you can visualize your data with external tools
-
-Please find instructions for this lab [here](./external-tools/README.md)
-
 ### Next Step
 Continue to [Administration & Performance Tuning](../lab5-advanced-operations/README.md).
