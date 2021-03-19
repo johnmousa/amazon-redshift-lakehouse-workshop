@@ -225,10 +225,11 @@ CREATE TABLE IF NOT EXISTS public.date_dim
     d_date
     )
 ;
+```
 
+```sql
 copy public.date_dim from 's3://salamander-us-east-1/reinvent2018/ant353/tpds/date_dim/manifest'
-    IAM_ROLE '<RedshiftClusterRoleArn>' 
-    DELIMITER '~' gzip manifest IGNOREHEADER 1 region 'us-east-1';
+    DELIMITER '~' gzip manifest IGNOREHEADER 1 region 'us-east-1' IAM_ROLE '<RedshiftClusterRoleArn>';
 ```
 
 She will then create a FACT table in Redshift called `daily_product_reviews_fact` 
@@ -530,7 +531,7 @@ select
   sum(total_votes) votes
 from public.product_reviews
 group by 1
-order by 1 desc
+order by 1 desc;
 ```
 
 ### Next step

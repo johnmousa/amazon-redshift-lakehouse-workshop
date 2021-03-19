@@ -34,7 +34,7 @@ Creating a Glue Studio job
       
    1. Select the **Data source properties - S3 tab**
       
-   1. For **S3 source type** select the radio **S3 URL**
+   1. For **S3 source type** select the radio **S3 location**
       
    1. For **S3 URL** enter **s3://amazon-reviews-pds/tsv/**
       
@@ -42,10 +42,10 @@ Creating a Glue Studio job
       
    1. For **Delimiter** select **Tab**
    
-   As you may have noticed, without crawling the data, the data quality issues stick out. You can check this 
-   by checking the **Output schema** tab in the source node.
+   Now go to **Output schema** tab and click **Infer schema** button. 
+   As you may have noticed, without crawling the data, the data quality issues stick out.
    
-   ![Data quality issues](./assets/job-editor-source-data-quality.png)
+   ![Data quality issues](assets/job-editor-source-data-quality.png)
    
    A good thing though is that we can apply custom mappings
 
@@ -100,7 +100,7 @@ Creating a Glue Studio job
       Note if you will be doing both this lab and the AWS Glue DataBrew lab make sure to choose a different path for
       the output.
       
-   1. Glue Studio jobs can automatically update your Glue Data Catalog automatically with the schema definition 
+   1. Glue Studio jobs can update your Glue Data Catalog automatically with the schema definition 
       and new partitions. To enable this select 
       **Create a table in the Data Catalog and on subsequent runs, update the schema and add new partitions**
       
@@ -137,4 +137,4 @@ After job finishes you can Navigate to S3 console to the output location and ver
 You don't need this to continue to the next lab though as we'll use the pre-prepared data.
 
 ### Next Step
-Continue to [Loading data in your Redshift cluster](../README.md#finally-load-data-in-your-cluster).
+Continue to [Loading data in your Redshift cluster](../README.md#now-lets-load-data-in-your-cluster).

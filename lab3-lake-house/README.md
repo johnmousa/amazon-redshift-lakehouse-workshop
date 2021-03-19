@@ -83,8 +83,7 @@ Execute the following command to setup external schema to allow Redshift access 
 ```sql
 DROP SCHEMA IF EXISTS demo;
 CREATE EXTERNAL SCHEMA IF NOT EXISTS demo
-FROM DATA CATALOG DATABASE '<GlueExternalDatabaseName>'
-IAM_ROLE '<RedshiftClusterRoleArn>';
+FROM DATA CATALOG DATABASE '<GlueExternalDatabaseName>' IAM_ROLE '<RedshiftClusterRoleArn>';
 ```
 
 Let’s do a quick check to confirm we can access the data. Note, the 160+ million records matches the number the Glue Crawler showed.
@@ -151,6 +150,8 @@ select
   limit 1000;
 ```
 
+To stop from scrolling all values on Cloud9 you can press `:q`
+
 #### Optional exercise
 
 **Note:** this lab depends on the ETL streaming pipeline lab. Do this only if you finished the streaming one. 
@@ -183,7 +184,7 @@ SORTKEY (
     review_date);
 ```
 
-In previous lab, we already have the streaming product review dataset setup in the datalake. 
+In the previous lab, we already have the streaming product review dataset setup in the datalake. 
 Marie can create a consistent view for Miguel to see both the latest data which is loaded into Redshift and the history data which is in S3. She will need to create a union all view around the two data sets.
 
 Execute the following command, Note the use of `no schema binding` as the data in S3 will leverage a `schema on read` strategy.
@@ -210,7 +211,7 @@ from public.product_reviews_complete
 where product_category = 'Apparel'
 group by 1
 order by 1 desc
-limit 20
+limit 20;
 ```
 
 ### Extend the Data Warehouse with the Data Lake
@@ -264,6 +265,12 @@ where A.customer_id = B.c_customer_sk
   order by A.product_parent, A.review_date;
 ```
 
+```sql
+select * from public.customer_trends limit 100;
+```
+
+again to stop scrolling type `:q`
+
 The result is very useful! Miguel wants to export the result back to Data lake to share it with other teams. 
 He can easily unload data from Redshift to the datalake, so other tools can process the data when needed. Note: UNLOAD supports dynamic partitioning and parquet format. 
 By selecting a partition column we can optimize the output for query performance.
@@ -274,11 +281,7 @@ Execute the following which will export the combined table to a new S3 location:
 
 ```sql
 unload ('select * from public.customer_trends')
-to 's3://<TaskDataBucketName>/rll-datalake/report/'
-iam_role '<RedshiftClusterRoleArn>'
-FORMAT PARQUET
-ALLOWOVERWRITE
-PARTITION BY (product_category );
+to 's3://<TaskDataBucketName>/rll-datalake/report/' iam_role '<RedshiftClusterRoleArn>' FORMAT PARQUET ALLOWOVERWRITE PARTITION BY (product_category );
 ```
 
 You can also use CTAS.
@@ -288,8 +291,7 @@ CREATE EXTERNAL TABLE
 demo.customer_trends
 PARTITIONED BY (product_category)
 STORED AS PARQUET
-LOCATION 's3://<TaskDataBucketName>/rll-datalake/customer_trends/'
-AS select * from public.customer_trends;
+LOCATION 's3://<TaskDataBucketName>/rll-datalake/customer_trends/' AS select * from public.customer_trends;
 ```
 
 Let’s check the exported data on S3
