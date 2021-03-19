@@ -28,7 +28,7 @@ Please use Chrome or Firefox browser to ensure smooth lab experience.
 To launch this Cloudformation template and configure security automatically using cloud formation, use the following link.
 Launch
 
-[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=RedshiftLakeHouseWS&templateURL=https://raw.githubusercontent.com/johnmousa/amazon-redshift-lakehouse-workshop/main/lab1-getting-started/stacks/amazon-redshift-lakehouse-ws.yaml)
+[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=RedshiftLakeHouseWS&templateURL=https://aws-glue-assets-581866950581-us-east-1.s3.amazonaws.com/redshift-lakehouse-immersion-day/amazon-redshift-lakehouse-ws.yaml)
 
 ### Template Parameters
 
